@@ -1,5 +1,6 @@
 const { Client, Collection, Intents } = require('discord.js');
 const Canvas = require('./Utilities/Canvas.js');
+const Game = require('./Utilities/Game.js');
 const Util = require('./Utilities/Util.js');
 
 module.exports = class HungerGamesClient extends Client {
@@ -18,7 +19,8 @@ module.exports = class HungerGamesClient extends Client {
 		this.events = new Collection();
 
 		this.utils = new Util(this);
-		this.cavnas = new Canvas(this);
+		this.game = new Game(this);
+		this.canvas = new Canvas(this);
 	}
 
 	validate(options) {
