@@ -1,9 +1,9 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
-const { createCanvas, loadImage } = require('canvas');
+const { createCanvas } = require('canvas');
 
-const backGroundColor = '#5d5050';
 const avatarSize = 150;
+const halfAvatar = 75;
 const avatarPaddingX = 50;
 const avatarPaddingY = 200;
 const avatarSpacingX = 30;
@@ -37,10 +37,10 @@ module.exports = {
 		.addUserOption(option => option.setName('tribute-22').setDescription('The twenty second tribute.'))
 		.addUserOption(option => option.setName('tribute-23').setDescription('The twenty third tribute.'))
 		.addUserOption(option => option.setName('tribute-24').setDescription('The twenty fourth tribute.')),
-	async run({ application }) {
+	async run({ client, application }) {
 		const tributes = application.options._hoistedOptions;
 		const tributeData = this.generateTributeData(tributes);
-		const canvas = await this.populateCanvas(tributeData);
+		const canvas = await this.populateCanvas(tributeData, client);
 
 		const buttons = new MessageActionRow()
 			.addComponents(
@@ -60,7 +60,7 @@ module.exports = {
 
 		const theReapingEmbed = new MessageEmbed()
 			.setImage('attachment://tributesPage.png')
-			.setColor(backGroundColor);
+			.setColor('#5d5050');
 		application.followUp({
 			embeds: [theReapingEmbed],
 			files: [{ attachment: canvas.toBuffer(), name: 'tributesPage.png' }],
@@ -90,7 +90,7 @@ module.exports = {
 		return tributeDataArray;
 	},
 
-	async populateCanvas(tributeData) {
+	async populateCanvas(tributeData, client) {
 		const verticalAvatarCount = Math.min(tributeData.length, 6);
 		const horitzontalAvatarCount = Math.ceil(tributeData.length / 6);
 
@@ -101,30 +101,19 @@ module.exports = {
 		const canvas = createCanvas(canvasWidth, canvasHeight);
 		const ctx = canvas.getContext('2d');
 
-		this.drawCanvas(ctx);
-		await this.generateStatusImage(ctx, tributeData);
+		client.canvas.drawBackground(ctx, '#5d5050');
+		this.drawHeaderText(ctx);
+		await this.generateStatusImage(ctx, tributeData, client);
 
 		return canvas;
 	},
 
-	drawCanvas(ctx) {
-		ctx.fillStyle = backGroundColor;
-		ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-	},
-
-	async generateStatusImage(ctx, tributeData) {
+	async generateStatusImage(ctx, tributeData, client) {
 		ctx.strokeStyle = '#000000';
 		let avatarDestinationX = avatarPaddingX;
 		let avatarDestinationY = avatarPaddingY;
 
-		const avatarPromises = [];
-
-		for (let i = 0; i < tributeData.length; i++) {
-			const avatar = loadImage(tributeData[i].avatar);
-			avatarPromises.push(avatar);
-		}
-
-		await Promise.all(avatarPromises);
+		const avatarPromises = await client.canvas.massLoadImages(tributeData);
 
 		for (let i = 0; i < tributeData.length; i++) {
 			ctx.drawImage(await avatarPromises[i], avatarDestinationX, avatarDestinationY, avatarSize, avatarSize);
@@ -155,6 +144,7 @@ module.exports = {
 		}
 
 		this.drawAliveText(ctx, tributeData);
+		this.drawDistrictText(ctx, tributeData);
 	},
 
 	drawAliveText(ctx, tributeArray) {
@@ -162,7 +152,7 @@ module.exports = {
 		const deceasedColor = '#fa6666';
 		ctx.font = '25px arial';
 
-		let textDestinationX = (avatarSize / 2) + avatarPaddingX;
+		let textDestinationX = halfAvatar + avatarPaddingX;
 		let textDestinationY = avatarPaddingY + (avatarSize * 1.2);
 
 		for (let i = 0; i < tributeArray.length; i++) {
@@ -177,9 +167,76 @@ module.exports = {
 			textDestinationX += avatarSpacingX + avatarSize;
 
 			if ((i + 1) % 6 === 0) {
-				textDestinationX = (avatarSize / 2) + avatarPaddingX;
+				textDestinationX = halfAvatar + avatarPaddingX;
 				textDestinationY += avatarSize + avatarSpacingY;
 			}
+		}
+	},
+
+	// optimize later, really messy lol
+	drawDistrictText(ctx, tributeArray) {
+		ctx.font = 'bold 28px arial';
+		ctx.textBaseline = 'alphabetic';
+		ctx.fillStyle = '#ffffff';
+		ctx.textAlign = 'center';
+
+		const districtCount = Math.max(Math.ceil(tributeArray.length / 2), 2);
+		const initialInBetweenPosition = avatarPaddingX + avatarSize + (avatarSpacingX / 2);
+		let xMultiplier = 0;
+
+		let textDestinationX = initialInBetweenPosition;
+		let textDestinationY = avatarPaddingY - 15;
+
+		for (let i = 0; i < districtCount; i++) {
+			const districtText = `District ${i + 1}`;
+
+			if (tributeArray.length === 2) {
+				textDestinationX = avatarPaddingX + halfAvatar + (avatarSpacingX * i) + (avatarSize * i);
+			} else if (i === districtCount - 1 && tributeArray.length % 2 === 1) {
+				textDestinationX = avatarPaddingX + (avatarSpacingX * xMultiplier) + (avatarSize * xMultiplier) + halfAvatar;
+			} else {
+				xMultiplier += 2;
+			}
+
+			ctx.fillText(districtText, textDestinationX, textDestinationY);
+			textDestinationX += (avatarSize * 2) + (avatarSpacingX * 2);
+
+			if ((i + 1) % 3 === 0) {
+				textDestinationX = initialInBetweenPosition;
+				xMultiplier = 0;
+				textDestinationY += avatarSize + avatarSpacingY;
+			}
+		}
+	},
+
+	drawHeaderText(ctx, eventText, resultsText) {
+		if (!eventText) eventText = 'The Reaping';
+
+		const text = ['The Hunger Games', eventText];
+
+		if (resultsText) text.push(resultsText);
+
+		ctx.textBaseline = 'top';
+		ctx.font = '35px arial';
+		ctx.textAlign = 'center';
+
+		let textPaddingY = 30;
+		const ySizing = 45;
+
+		for (let i = 0; i < text.length; i++) {
+			const textMeasure = ctx.measureText(text[i]);
+			const textCenterAlignment = (ctx.canvas.width / 2) - textMeasure.actualBoundingBoxLeft - 5;
+			const textWidth = textMeasure.width + 10;
+
+			ctx.fillStyle = '#232323';
+			ctx.fillRect(textCenterAlignment, textPaddingY, textWidth, ySizing);
+
+			ctx.strokeStyle = '#ffffff';
+			ctx.strokeRect(textCenterAlignment, textPaddingY, textWidth, ySizing);
+
+			ctx.fillStyle = '#e4ae24';
+			ctx.fillText(text[i], ctx.canvas.width / 2, textPaddingY);
+			textPaddingY += 70;
 		}
 	}
 };
