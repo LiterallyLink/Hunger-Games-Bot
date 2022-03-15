@@ -993,22 +993,6 @@
 			"killers": []
 		},
 		{
-			"text": "(Player1) forces (Player2) to eat pant. (Player2) successfully does so.",
-			"tributes": 2,
-			"deaths": [],
-			"killers": []
-		},
-		{
-			"text": "(Player1) forces (Player2) to eat pant. (Player2) chokes and dies.",
-			"tributes": 2,
-			"deaths": [
-				2
-			],
-			"killers": [
-				1
-			]
-		},
-		{
 			"text": "(Player1) catches (Player2) off guard and kills them.",
 			"tributes": 2,
 			"deaths": [
@@ -2072,22 +2056,6 @@
 			"tributes": 1,
 			"deaths": [],
 			"killers": []
-		},
-		{
-			"text": "(Player1) forces (Player2) to eat pant. (Player2) successfully does so.",
-			"tributes": 2,
-			"deaths": [],
-			"killers": []
-		},
-		{
-			"text": "(Player1) forces (Player2) to eat pant. (Player2) chokes and dies.",
-			"tributes": 2,
-			"deaths": [
-				2
-			],
-			"killers": [
-				1
-			]
 		},
 		{
 			"text": "(Player1) catches (Player2) off guard and kills them.",
