@@ -1,2 +1,2 @@
-# Hunger Games Bot
- A DJS Bot based around the Hunger Games.
+# sex big chungus Bot
+ A amongsu Bot based around the sex big chungus.
