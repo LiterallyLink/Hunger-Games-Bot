@@ -5,11 +5,15 @@ module.exports = class Game {
 	}
 
 	gameOver(tributeData) {
-		const tributesLeftAlive = tributeData.filter(tribute => tribute.alive);
+		const tributesLeftAlive = this.tributesLeftAlive(tributeData);
 
 		if (tributesLeftAlive.length === 2) return tributesLeftAlive[0].district === tributesLeftAlive[1].district;
 		else if (tributesLeftAlive.length === 1) return true;
 		else return false;
+	}
+
+	tributesLeftAlive(tributeData) {
+		return tributeData.filter(tribute => tribute.alive);
 	}
 
 };
