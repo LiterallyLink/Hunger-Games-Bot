@@ -8,7 +8,7 @@ const halfAvatar = 75;
 const avatarPaddingX = 50;
 const avatarPaddingY = 230;
 const avatarSpacingX = 30;
-const avatarSpacingY = 100;
+const avatarSpacingY = 130;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -86,8 +86,6 @@ module.exports = {
 			if (deaths.length) {
 				const deathMessage = `${deaths.length} cannon shot${deaths.length === 1 ? '' : 's'} can be heard in the distance.`;
 				const deathList = deaths.map(trib => `<@${trib.id}>`).join('\n');
-				announcementCount++;
-
 				const deathImage = await this.generateFallenTributes(client, deaths, announcementCount, deathMessage);
 
 				const deadTributesEmbed = new MessageEmbed()
@@ -96,7 +94,9 @@ module.exports = {
 					.setDescription(`\n${deathMessage}\n\n${deathList}`)
 					.setColor('#5d5050');
 				await application.followUp({ embeds: [deadTributesEmbed], files: [{ attachment: deathImage.toBuffer(), name: 'deadTributes.png' }] });
+
 				await client.utils.sleep(5000);
+				announcementCount++;
 			}
 
 			if (!bloodBath) sun = !sun;
@@ -175,7 +175,8 @@ module.exports = {
 
 			if (!tributeData[i].alive) client.canvas.greyScale(ctx, destinationX, destinationY, avatarSize);
 
-			destinationX += avatarSpacingX + avatarSize;
+			const spacingMultiplier = i % 2 === 0 ? 1 : 1.5;
+			destinationX += avatarSize + (avatarSpacingX * spacingMultiplier);
 
 			if ((i + 1) % 6 === 0) {
 				destinationX = avatarPaddingX;
@@ -195,7 +196,7 @@ module.exports = {
 
 		ctx.font = '35px arial';
 
-		const canvasWidth = ctx.measureText(resultsText).width + 100;
+		const canvasWidth = Math.max(ctx.measureText(resultsText).width + 100, ctx.measureText('The Hunger Games').width + 100);
 		ctx.canvas.width = canvasWidth;
 
 		client.canvas.drawBackground(ctx, '#5d5050');
@@ -221,7 +222,7 @@ module.exports = {
 	},
 
 	async generateFallenTributes(client, deaths, announcementCount, deathMessage) {
-		const canvasHeight = 450;
+		const canvasHeight = 500;
 
 		const canvas = createCanvas(1, canvasHeight);
 		const ctx = canvas.getContext('2d');
@@ -229,7 +230,7 @@ module.exports = {
 		ctx.font = 'bold 28px arial';
 
 		const deathMessageLength = ctx.measureText(deathMessage).width + 200;
-		const avatarXLength = ((avatarSize + avatarSpacingX) * deaths.length) - (avatarSpacingX + 100);
+		const avatarXLength = (avatarPaddingX * 2) + (avatarSize * deaths.length) + (avatarSpacingX * (deaths.length - 1));
 		const canvasWidth = Math.max(deathMessageLength, avatarXLength);
 
 		ctx.canvas.width = canvasWidth;
@@ -305,7 +306,8 @@ module.exports = {
 		for (let i = 0; i < tributeArray.length; i++) {
 			ctx.fillText(`${tributeArray[i].name.slice(0, 10)}...`, textDestinationX, textDestinationY);
 
-			textDestinationX += avatarSpacingX + avatarSize;
+			const spacingMultiplier = i % 2 === 0 ? 1 : 1.5;
+			textDestinationX += avatarSize + (avatarSpacingX * spacingMultiplier);
 
 			if ((i + 1) % 6 === 0) {
 				textDestinationX = avatarPaddingX + halfAvatar;
@@ -330,7 +332,8 @@ module.exports = {
 			ctx.fillStyle = alive ? aliveColor : deceasedColor;
 			ctx.fillText(statusText, textDestinationX, textDestinationY);
 
-			textDestinationX += avatarSpacingX + avatarSize;
+			const spacingMultiplier = i % 2 === 0 ? 1 : 1.5;
+			textDestinationX += avatarSize + (avatarSpacingX * spacingMultiplier);
 
 			if ((i + 1) % 6 === 0) {
 				textDestinationX = avatarPaddingX + halfAvatar;
@@ -345,31 +348,37 @@ module.exports = {
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'top';
 
-		const districtCount = Math.max(Math.ceil(tributeArray.length / 2), 2);
-		const initialInBetweenPosition = avatarPaddingX + avatarSize + (avatarSpacingX / 2);
-		let xMultiplier = 0;
+		const districtCount = tributeArray.map(trib => trib.district).pop();
 
-		let textDestinationX = initialInBetweenPosition;
 		let textDestinationY = avatarPaddingY - 40;
+		let textDestinationX = avatarPaddingX + halfAvatar;
+
+		if (tributeArray.length === 2) {
+			ctx.fillText(`District 1`, textDestinationX, textDestinationY);
+			ctx.fillText(`District 2`, textDestinationX + avatarSize + avatarSpacingX, textDestinationY);
+			return;
+		}
+
+		const middleXPositionArray = [215, 590, 965];
+		const centerXPositionArray = [125, 500, 875];
+
+		let iterator = 0;
 
 		for (let i = 0; i < districtCount; i++) {
-			const districtText = `District ${i + 1}`;
+			const isLastIteration = i === districtCount - 1;
 
-			if (tributeArray.length === 2) {
-				textDestinationX = avatarPaddingX + halfAvatar + ((avatarSpacingX + avatarSize) * i);
-			} else if (i === districtCount - 1 && tributeArray.length % 2 === 1) {
-				textDestinationX = avatarPaddingX + ((avatarSpacingX + avatarSize) * xMultiplier) + halfAvatar;
+			if (isLastIteration && tributeArray.length % 2 === 1) {
+				textDestinationX = centerXPositionArray[iterator];
 			} else {
-				xMultiplier += 2;
+				textDestinationX = middleXPositionArray[iterator];
 			}
 
-			ctx.fillText(districtText, textDestinationX, textDestinationY);
-			textDestinationX += (avatarSize + avatarSpacingX) * 2;
+			ctx.fillText(`District ${i + 1}`, textDestinationX, textDestinationY);
+			iterator++;
 
 			if ((i + 1) % 3 === 0) {
-				textDestinationX = initialInBetweenPosition;
+				iterator = 0;
 				textDestinationY += avatarSize + avatarSpacingY;
-				xMultiplier = 0;
 			}
 		}
 	},
