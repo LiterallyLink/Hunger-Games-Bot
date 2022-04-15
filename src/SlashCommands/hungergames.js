@@ -1,5 +1,6 @@
+/* eslint-disable consistent-return */
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageEmbed } = require('discord.js');
+const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 const { bloodbath, day, night } = require('../../hungerGamesEvents.json');
 const { createCanvas, loadImage } = require('canvas');
 
@@ -40,13 +41,63 @@ module.exports = {
 		.addUserOption(option => option.setName('tribute-24').setDescription('The twenty fourth tribute.')),
 	async run({ client, application }) {
 		const tributes = application.options._hoistedOptions;
-		const tributeData = this.generateTributeData(tributes);
+		let tributeData = this.generateTributeData(tributes);
 		const canvas = await this.populateCanvas(client, tributeData);
+
+		const buttons = new MessageActionRow()
+			.addComponents(
+				new MessageButton()
+					.setCustomId('proceed')
+					.setLabel('Proceed')
+					.setStyle('SUCCESS'),
+				new MessageButton()
+					.setCustomId('randomize')
+					.setLabel('Randomize Tributes')
+					.setStyle('PRIMARY'),
+				new MessageButton()
+					.setCustomId('delete')
+					.setLabel('🗑️')
+					.setStyle('DANGER')
+			);
+
+		const buttons2 = new MessageActionRow()
+			.addComponents(
+				new MessageButton()
+					.setCustomId('proceed')
+					.setLabel('Proceed')
+					.setStyle('SUCCESS'),
+				new MessageButton()
+					.setCustomId('delete')
+					.setLabel('🗑️')
+					.setStyle('DANGER')
+			);
 
 		const theReapingEmbed = new MessageEmbed()
 			.setImage('attachment://tributesPage.png')
 			.setColor('#5d5050');
-		await application.followUp({ embeds: [theReapingEmbed], files: [{ attachment: canvas.toBuffer(), name: 'tributesPage.png' }] });
+		let theReapingMsg = await application.followUp({ embeds: [theReapingEmbed], files: [{ attachment: canvas.toBuffer(), name: 'tributesPage.png' }], components: [buttons] });
+
+		const filter = i => {
+			i.deferUpdate();
+			return i.user.id === application.user.id;
+		};
+
+		let startGame = false;
+
+		while (startGame === false) {
+			const response = await theReapingMsg.awaitMessageComponent({ filter, componentType: 'BUTTON', time: 300000 }).catch(() => false);
+
+			if (!response || response.customId === 'delete') {
+				return theReapingMsg.delete().catch();
+			} else if (response.customId === 'randomize') {
+				tributeData = client.game.randomizeTributeData(tributeData);
+				const randomizedCanvas = await this.populateCanvas(client, tributeData);
+
+				theReapingMsg = await application.editReply({ embeds: [theReapingEmbed], files: [{ attachment: randomizedCanvas.toBuffer(), name: 'tributesPage.png' }] });
+			} else {
+				startGame = true;
+			}
+		}
 
 		let bloodBath = true;
 		let sun = true;
@@ -76,10 +127,9 @@ module.exports = {
 				const eventImage = await this.generateEventImage(client, eventText, results[i], avatars[i]);
 
 				hungerGamesEmbed.setImage('attachment://currentEvent.png');
-				hungerGamesEmbed.setDescription(`${embedResultsText[i]}`);
 				hungerGamesEmbed.setFooter({ text: `${remainingTributes.length} Tributes Remaining...` });
 
-				await application.followUp({ embeds: [hungerGamesEmbed], files: [{ attachment: eventImage.toBuffer(), name: 'currentEvent.png' }] });
+				await application.followUp({ content: `${embedResultsText[i]}`, embeds: [hungerGamesEmbed], files: [{ attachment: eventImage.toBuffer(), name: 'currentEvent.png' }] });
 				await client.utils.sleep(5000);
 			}
 
@@ -92,10 +142,16 @@ module.exports = {
 					.setTitle(`The Hunger Games - Fallen Tributes`)
 					.setImage('attachment://deadTributes.png')
 					.setDescription(`\n${deathMessage}\n\n${deathList}`)
+					.setFooter({ text: `You have 5 minutes to click proceed, or the game will continue automatically.` })
 					.setColor('#5d5050');
-				await application.followUp({ embeds: [deadTributesEmbed], files: [{ attachment: deathImage.toBuffer(), name: 'deadTributes.png' }] });
+				const deadTributeMessage = await application.followUp({ embeds: [deadTributesEmbed], files: [{ attachment: deathImage.toBuffer(), name: 'deadTributes.png' }], components: [buttons2] });
 
-				await client.utils.sleep(5000);
+				const continueGame = await deadTributeMessage.awaitMessageComponent({ filter, componentType: 'BUTTON', time: 300000 }).catch(() => false);
+
+				if (continueGame.customId === 'delete') {
+					return deadTributeMessage.delete().catch();
+				}
+
 				announcementCount++;
 			}
 
@@ -130,18 +186,13 @@ module.exports = {
 				alive: true,
 				kills: [],
 				killedBy: '',
-				district: this.assignDistrict(tributes, i + 1)
+				district: tributes.length === 2 ? i + 1 : Math.ceil(i / 2)
 			};
 
 			tributeDataArray.push(tributeObj);
 		}
 
 		return tributeDataArray;
-	},
-
-	assignDistrict(tributes, i) {
-		if (tributes.length === 2) return i;
-		return Math.ceil(i / 2);
 	},
 
 	async populateCanvas(client, tributeData) {
@@ -275,7 +326,12 @@ module.exports = {
 		const ctx = canvas.getContext('2d');
 
 		client.canvas.drawBackground(ctx, '#5d5050');
-		this.drawHeaderText(ctx, ['The Winner']);
+
+		if (tributeData.length === 1) {
+			this.drawHeaderText(ctx, ['The Winner']);
+		} else {
+			this.drawHeaderText(ctx, ['The Winners']);
+		}
 
 		ctx.strokeStyle = '#000000';
 
