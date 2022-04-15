@@ -16,4 +16,14 @@ module.exports = class Game {
 		return tributeData.filter(tribute => tribute.alive);
 	}
 
+	randomizeTributeData(tributeData) {
+		tributeData = this.client.utils.shuffle(tributeData);
+
+		for (let i = 0; i < tributeData.length; i++) {
+			tributeData[i].district = tributeData.length === 2 ? i + 1 : Math.ceil(i / 2);
+		}
+
+		return tributeData;
+	}
+
 };
