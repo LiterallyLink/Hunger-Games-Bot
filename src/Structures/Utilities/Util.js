@@ -20,6 +20,18 @@ module.exports = class Util {
 		await new Promise(resolve => setTimeout(resolve, ms));
 	}
 
+	shuffle(array) {
+		let currentIndex = array.length, randomIndex;
+
+		while (currentIndex !== 0) {
+			randomIndex = Math.floor(Math.random() * currentIndex);
+			currentIndex--;
+			[array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+		}
+
+		return array;
+	}
+
 	async clearSlashCommands() {
 		const clientId = '809302717843111946';
 		const rest = new REST({ version: '9' }).setToken(token);
@@ -45,7 +57,7 @@ module.exports = class Util {
 		}
 
 		const clientID = '952362588170244157';
-		const guildID = '804190768591405116';
+		const guildID = '815773313711996928';
 		const rest = new REST({ version: '9' }).setToken(token);
 		// await this.registerSlashCommandsGlobally(rest, slashCommandArray, clientID);
 		return await this.registerSlashCommandsToGuild(rest, slashCommandArray, clientID, guildID);
