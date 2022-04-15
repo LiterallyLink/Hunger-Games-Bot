@@ -7,7 +7,7 @@ module.exports = class HungerGamesClient extends Client {
 
 	constructor(options = {}) {
 		super({
-			intents: new Intents(),
+			intents: new Intents(1539),
 			allowedMentions: {
 				parse: ['users']
 			}
