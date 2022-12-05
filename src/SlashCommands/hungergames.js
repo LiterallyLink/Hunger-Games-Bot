@@ -1,7 +1,7 @@
 /* eslint-disable consistent-return */
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
-const { bloodbath, day, night } = require('../../hungerGamesEvents.json');
+const { bloodbath, day, night } = require('../../default_events.json');
 const { createCanvas, loadImage } = require('canvas');
 
 const avatarSize = 150;
@@ -38,7 +38,8 @@ module.exports = {
 		.addUserOption(option => option.setName('tribute-21').setDescription('The twenty first tribute.'))
 		.addUserOption(option => option.setName('tribute-22').setDescription('The twenty second tribute.'))
 		.addUserOption(option => option.setName('tribute-23').setDescription('The twenty third tribute.'))
-		.addUserOption(option => option.setName('tribute-24').setDescription('The twenty fourth tribute.')),
+		.addUserOption(option => option.setName('tribute-24').setDescription('The twenty fourth tribute.'))
+		.addUserOption(option => option.setName('tribute-25').setDescription('The twenty fifth tribute.')),
 	async run({ client, application }) {
 		const tributes = application.options._hoistedOptions;
 		let tributeData = this.generateTributeData(tributes);
